@@ -49,8 +49,12 @@ if not shutil.which("ffmpeg"):
 
 
 chat = ChatTTS.Chat()
-device_str=os.getenv('device','default')
 
+if torch.cuda.is_available():
+        device_str="cuda"  # 使用 GPU
+    else:
+        device_str="default"   # 使用 CPU
+        print("当前设备为: CPU")
 print(device_str)
 if device_str in ['default','mps']:
     device=select_device(min_memory=2047,experimental=True if device_str=='mps' else False)
