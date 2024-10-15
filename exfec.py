@@ -49,9 +49,9 @@ if not shutil.which("ffmpeg"):
 
 
 chat = ChatTTS.Chat()
-
+print(torch.cuda.is_available(),"------")
 if torch.cuda.is_available():
-        device_str="cuda"  # 使用 GPU
+    device_str="cuda"  # 使用 GPU
 else:
     device_str="default"   # 使用 CPU
 print(device_str)
