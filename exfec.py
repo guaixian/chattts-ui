@@ -338,6 +338,7 @@ def clear_wavs():
 try:
     host = WEB_ADDRESS.split(':')
     print(f'Start:{WEB_ADDRESS}')
+    print("---------------")
     serve(app,host=host[0], port=int(host[1]))
 except Exception as e:
     print(e)
