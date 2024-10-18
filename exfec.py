@@ -79,6 +79,9 @@ app = Flask(__name__,
             static_url_path='/static',
             template_folder=ROOT_DIR + '/templates')
 
+
+app.config["voice_id"]="2222"
+
 root_log = logging.getLogger()  # Flask的根日志记录器
 root_log.handlers = []
 root_log.setLevel(logging.WARNING)
@@ -101,15 +104,15 @@ def static_files(filename):
     return send_from_directory(app.config['STATIC_FOLDER'], filename)
 
 
-@app.route('/')
-def index():
-    speakers = utils.get_speakers()
-    return render_template(
-        f"index{'' if is_cn else 'en'}.html",
-        weburl=WEB_ADDRESS,
-        speakers=speakers,
-        version=VERSION
-    )
+# @app.route('/')
+# def index():
+#     speakers = utils.get_speakers()
+#     return render_template(
+#         f"index{'' if is_cn else 'en'}.html",
+#         weburl=WEB_ADDRESS,
+#         speakers=speakers,
+#         version=VERSION
+#     )
 
 @app.route('/spakers')
 def get_spakers():
@@ -146,14 +149,15 @@ def tts():
     # 获取
     custom_voice = utils.get_parameter(request, "custom_voice", defaults["custom_voice"], int)
     voice = str(custom_voice) if custom_voice > 0 else utils.get_parameter(request, "voice", defaults["voice"], str)
+
     temperature = utils.get_parameter(request, "temperature", defaults["temperature"], float)
     top_p = utils.get_parameter(request, "top_p", defaults["top_p"], float)
     top_k = utils.get_parameter(request, "top_k", defaults["top_k"], int)
     skip_refine = utils.get_parameter(request, "skip_refine", defaults["skip_refine"], int)
     is_stream = utils.get_parameter(request, "is_stream", defaults["is_stream"], int)
-    speed = utils.get_parameter(request, "speed", defaults["speed"], int)
+
     text_seed = utils.get_parameter(request, "text_seed", defaults["text_seed"], int)
-    refine_max_new_token = utils.get_parameter(request, "refine_max_new_token", defaults["refine_max_new_token"], int)
+
     infer_max_new_token = utils.get_parameter(request, "infer_max_new_token", defaults["infer_max_new_token"], int)
     wav = utils.get_parameter(request, "wav", defaults["wav"], int)
 
@@ -164,21 +168,21 @@ def tts():
     rand_spk = None
     # voice可能是 {voice}.csv or {voice}.pt or number
     voice = voice.replace('.csv', '.pt')
+    app.config["voice_id"]=voice
     seed_path = f'{SPEAKER_DIR}/{voice}'
     print(f'{voice=}')
-    # if voice.endswith('.csv') and os.path.exists(seed_path):
-    #    rand_spk=utils.load_speaker(voice)
-    #    print(f'当前使用音色 {seed_path=}')
-    # el
 
-    if voice.endswith('.pt') and os.path.exists(seed_path):
+
+    if voice.endswith('.pt') and os.path.exists(seed_path) and voice != app.config["voice_id"]:
         # 如果.env中未指定设备，则使用 ChatTTS相同算法找设备，否则使用指定设备
         rand_spk = torch.load(seed_path, map_location=device)
+        # 打印 state_dict 中的键
+        print(rand_spk.keys())
+
+        # 查看某个具体键的内容
+        # print(rand_spk['some_layer.weight'])
         print(f'当前使用音色 {seed_path=}')
-    # 否则 判断是否存在 {voice}.csv
-    # elif os.path.exists(f'{SPEAKER_DIR}/{voice}.csv'):
-    #    rand_spk=utils.load_speaker(voice)
-    #    print(f'当前使用音色 {SPEAKER_DIR}/{voice}.csv')
+
 
     if rand_spk is None:
         print(f'当前使用音色：根据seed={voice}获取随机音色')
@@ -201,46 +205,72 @@ def tts():
 
     # 中英按语言分行
     text_list = [t.strip() for t in text.split("\n") if t.strip()]
+    print("-------------")
+    for tx in text_list:
+        print(tx)
+    print("-------------")
+
     new_text = utils.split_text(text_list)
     if text_seed > 0:
         torch.manual_seed(text_seed)
 
     params_infer_code = ChatTTS.Chat.InferCodeParams(
+        prompt="[speed_1]",
         spk_emb=rand_spk,
-        prompt=f"[speed_{speed}]",
-        top_P=top_p,
-        top_K=top_k,
         temperature=temperature,
         max_new_token=infer_max_new_token
     )
     params_refine_text = ChatTTS.Chat.RefineTextParams(
-        prompt=prompt,
-        top_P=top_p,
-        top_K=top_k,
-        temperature=temperature,
-        max_new_token=refine_max_new_token
+        prompt='[oral_1][laugh_0][break_0]',
     )
+
     print(f'{prompt=}')
     # 将少于30个字符的行同其他行拼接
     retext = []
     short_text = ""
     for it in new_text:
         if len(it) < 30:
-            short_text += f"{it} [uv_break] "
+            short_text += f"{it}"
             if len(short_text) > 30:
                 retext.append(short_text)
                 short_text = ""
         else:
             retext.append(short_text + it)
             short_text = ""
+
+    # for it in new_text:
+    #     if len(it)>2048:
+    #         retext.append(it)
+    #     else:
+    #         short_text += it+f"{prompt}"
+    # if short_text !="":
+    #     retext.append(short_text)
+
     if len(short_text) > 30 or len(retext) < 1:
         retext.append(short_text)
+
     elif short_text:
-        retext[-1] += f" [uv_break] {short_text}"
+        retext[-1] += f"{short_text}"
 
     new_text = retext
+    print("-------------")
+
+    for tx in new_text:
+        print(tx)
+
+    print("-------------")
 
     new_text_list = [new_text[i:i + merge_size] for i in range(0, len(new_text), merge_size)]
+
+    print("-------------")
+    print(new_text_list)
+
+    print("-------------")
+
+    for tx in new_text_list:
+        print(tx)
+
+    print("-------------")
     filename_list = []
 
     audio_time = 0
