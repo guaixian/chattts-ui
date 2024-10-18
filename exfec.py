@@ -104,15 +104,15 @@ def static_files(filename):
     return send_from_directory(app.config['STATIC_FOLDER'], filename)
 
 
-# @app.route('/')
-# def index():
-#     speakers = utils.get_speakers()
-#     return render_template(
-#         f"index{'' if is_cn else 'en'}.html",
-#         weburl=WEB_ADDRESS,
-#         speakers=speakers,
-#         version=VERSION
-#     )
+@app.route('/')
+def index():
+    speakers = utils.get_speakers()
+    return render_template(
+        f"index{'' if is_cn else 'en'}.html",
+        weburl=WEB_ADDRESS,
+        speakers=speakers,
+        version=VERSION
+    )
 
 @app.route('/spakers')
 def get_spakers():
