@@ -214,8 +214,9 @@ def tts():
     if text_seed > 0:
         torch.manual_seed(text_seed)
 
+    print(f"------语速---{text_seed}---------")
     params_infer_code = ChatTTS.Chat.InferCodeParams(
-        prompt="[speed_1]",
+        prompt=f"[speed_{text_seed}]",
         spk_emb=rand_spk,
         temperature=temperature,
         max_new_token=infer_max_new_token
