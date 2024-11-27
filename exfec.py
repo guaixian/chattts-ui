@@ -157,6 +157,7 @@ def tts():
     is_stream = utils.get_parameter(request, "is_stream", defaults["is_stream"], int)
 
     text_seed = utils.get_parameter(request, "text_seed", defaults["text_seed"], int)
+    speed = utils.get_parameter(request, "speed", defaults["speed"], int)
 
     infer_max_new_token = utils.get_parameter(request, "infer_max_new_token", defaults["infer_max_new_token"], int)
     wav = utils.get_parameter(request, "wav", defaults["wav"], int)
@@ -214,9 +215,9 @@ def tts():
     if text_seed > 0:
         torch.manual_seed(text_seed)
 
-    print(f"------语速---{text_seed}---------")
+    print(f"------语速---{speed}---------")
     params_infer_code = ChatTTS.Chat.InferCodeParams(
-        prompt=f"[speed_{text_seed}]",
+        prompt=f"[speed_{speed}]",
         spk_emb=rand_spk,
         temperature=temperature,
         max_new_token=infer_max_new_token
