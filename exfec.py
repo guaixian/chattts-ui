@@ -174,11 +174,11 @@ def tts():
     print(f'{voice=}')
 
 
-    if voice.endswith('.pt') and os.path.exists(seed_path) and voice != app.config["voice_id"]:
+    if voice.endswith('.pt') and os.path.exists(seed_path):
         # 如果.env中未指定设备，则使用 ChatTTS相同算法找设备，否则使用指定设备
         rand_spk = torch.load(seed_path, map_location=device)
         # 打印 state_dict 中的键
-        print(rand_spk.keys())
+        # print(rand_spk.keys())
 
         # 查看某个具体键的内容
         # print(rand_spk['some_layer.weight'])
